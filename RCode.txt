@@ -1,0 +1,51 @@
+data<-read.table("C:\\data.txt", header=F) # File name including the full path for your data.
+
+# Data must be of the edge list format:
+# A B 1 means A influences B positively;
+# C D 1 means C influences D positively;
+# A C -1 means A influences C negatively etc.
+
+numstep<-3 # This sets the number of steps used, and in this version, step lengths have equal weights. 
+
+nodeID<-levels(factor(c(as.character(data[,1]),as.character(data[,2]))))
+numnode<-length(nodeID)
+mx<-PosEf<-NegEf<-TotalEf<-NetEf<-PosCI<-NegCI<-NowPos<-NowNeg<-matrix(rep(0,numnode^2),nrow=numnode,ncol=numnode)
+rownames(mx)<-rownames(PosEf)<-rownames(NegEf)<-rownames(TotalEf)<-rownames(NetEf)<-rownames(PosCI)<-rownames(NegCI)<-rownames(NowPos)<-rownames(NowNeg)<-nodeID
+colnames(mx)<-colnames(PosEf)<-colnames(NegEf)<-colnames(TotalEf)<-colnames(NetEf)<-colnames(PosCI)<-colnames(NegCI)<-colnames(NowPos)<-colnames(NowNeg)<-nodeID
+for (i in 1:length(data[,1])){
+mx[as.character(data[i,1]),as.character(data[i,2])]<-data[i,3]}
+
+for (i in 1:numnode)
+{for (j in 1:numnode) 
+{if (mx[j,i]>0) PosEf[j,i]<-mx[j,i]/sum(abs(mx[,i]))
+if (mx[j,i]<0) NegEf[j,i]<-mx[j,i]/sum(abs(mx[,i]))}}
+
+for (i in 1:numstep)
+{
+if (i==1)
+{PosCI<-PosEf
+NegCI<-NegEf
+TotalEf<-TotalEf+PosCI+abs(NegCI)
+NetEf<-NetEf+PosCI+NegCI}
+else
+{NowPos<-PosCI%*%PosEf+NegCI%*%NegEf
+NowNeg<-PosCI%*%NegEf+NegCI%*%PosEf
+TotalEf<-TotalEf+NowPos+abs(NowNeg)
+NetEf<-NetEf+NowPos+NowNeg
+PosCI<-NowPos
+NegCI<-NowNeg}
+}
+
+TotalIndex<-numeric(numnode)
+NetIndex<-numeric(numnode)
+NetIndex1<-numeric(numnode)
+for (i in 1:numnode) TotalIndex[i]<-sum(TotalEf[i,]) # Total effect for node i.
+for (i in 1:numnode) NetIndex[i]<-sum(NetEf[i,]) # Net effect exerted for nodei. 
+for (i in 1:numnode) NetIndex1[i]<-sum(NetEf[,i]) # Net effect received for node i.
+
+# Results are in a dataframe called resu. 
+# The 1st column is the node ID, 2nd column is the total effect, 
+# 3rd column is the net effect erxerted, and the 4th column is the net effect received. 
+
+resu<-data.frame(nodeID,TotalIndex,NetIndex,NetIndex1)
+resu
